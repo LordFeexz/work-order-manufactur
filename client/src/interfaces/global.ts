@@ -1,3 +1,4 @@
+import type { USER_ROLE } from "@/enums/model";
 import type { Session } from "next-auth";
 
 export type Locales = "en" | "id";
@@ -13,7 +14,8 @@ export type PageProps<
 export interface CustomSession extends Session {
   user?: {
     id?: string;
-    name?: string | null;
-    role?: string | null;
+    name?: string;
+    role: USER_ROLE;
+    access_token: string;
   };
 }

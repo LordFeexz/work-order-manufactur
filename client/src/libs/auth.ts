@@ -20,11 +20,11 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          const { id, role } = verifyToken(credentials?.access_token);
+          const { id, role, username } = verifyToken(credentials?.access_token);
 
           return {
             id,
-            name: "user",
+            name: username,
             access_token: credentials?.access_token,
             role,
           };
@@ -56,6 +56,7 @@ export const authOptions: NextAuthOptions = {
       session.user.id = token.id;
       session.user.access_token = token.access_token;
       session.user.role = token.role;
+      session.user.name = token.username;
 
       return session;
     },
@@ -71,6 +72,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.username = user.name;
       }
       if (account) {
         token.access_token = user?.access_token;

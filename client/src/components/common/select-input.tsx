@@ -1,26 +1,45 @@
 import { memo, type ComponentProps } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
 import { Label } from "../ui/label";
 import { cn } from "@/libs/utils";
-import { Input } from "../ui/input";
 
-export interface LabelledInputProps extends ComponentProps<"input"> {
+export interface SelectOptions {
+  value: string;
+  label: string;
+}
+
+export interface SelectInputProps extends ComponentProps<typeof Select> {
+  options: SelectOptions[];
   wrapperClassName?: string;
   id: string;
   label: string;
   required?: boolean;
   labelClassName?: string;
   errors?: string[];
+  selectContentClassName?: string;
+  itemClassName?: string;
+  placeHolder?: string;
 }
 
-function LabelledInput({
+function SelectInput({
   wrapperClassName,
   id,
   label,
   required,
   labelClassName,
   errors = [],
+  options = [],
+  selectContentClassName,
+  placeHolder = "Select a value",
+  itemClassName,
   ...rest
-}: LabelledInputProps) {
+}: SelectInputProps) {
   return (
     <div aria-describedby={`label-${id}`} className={wrapperClassName}>
       <Label
@@ -34,7 +53,22 @@ function LabelledInput({
       >
         {label}
       </Label>
-      <Input required={required} aria-required={required} id={id} {...rest} />
+      <Select {...rest}>
+        <SelectTrigger>
+          <SelectValue placeholder={placeHolder} />
+        </SelectTrigger>
+        <SelectContent className={selectContentClassName}>
+          {options.map(({ value, label }) => (
+            <SelectItem
+              className={cn("capitalize", itemClassName)}
+              key={value}
+              value={value}
+            >
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {!!errors.length && (
         <div className="flex flex-col justify-center items-center">
           {errors.map((error) => (
@@ -51,4 +85,4 @@ function LabelledInput({
   );
 }
 
-export default memo(LabelledInput);
+export default memo(SelectInput);

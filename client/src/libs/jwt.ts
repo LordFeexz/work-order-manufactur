@@ -1,9 +1,11 @@
+import type { USER_ROLE } from "@/enums/model";
 import { type JwtPayload, verify, sign } from "jsonwebtoken";
 import type { JWT } from "next-auth/jwt";
 
 export interface TokenValue extends JwtPayload {
   id: string;
-  role: string;
+  role: USER_ROLE;
+  username: string;
 }
 
 export const verifyToken = (token: string | any): TokenValue =>
