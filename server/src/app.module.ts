@@ -14,6 +14,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from './models/users';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './guards/role.guard';
 
 const conf = require('../config/config');
 const environment = process.env.NODE_ENV ?? 'development';
@@ -48,12 +50,19 @@ const environment = process.env.NODE_ENV ?? 'development';
         max: 20,
         acquire: 10000,
       },
+      timezone: '+07:00',
+      benchmark: true,
       models: [User],
     }),
     UserModule,
     AuthModule,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule, OnApplicationShutdown {
   public configure(consumer: MiddlewareConsumer) {

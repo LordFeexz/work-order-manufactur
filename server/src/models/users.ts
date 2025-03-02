@@ -7,6 +7,8 @@ export enum USER_ROLE {
   OPERATOR = 'operator',
 }
 
+export const USER_ROLES = Object.values(USER_ROLE);
+
 export interface IUserAttributes extends BaseModel<string> {
   role: USER_ROLE;
   username: string;

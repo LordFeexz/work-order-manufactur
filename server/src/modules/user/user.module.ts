@@ -1,12 +1,24 @@
-import { Global, Module } from '@nestjs/common';
+import {
+  Global,
+  type MiddlewareConsumer,
+  Module,
+  type NestModule,
+} from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from 'src/models/users';
 import { UserService } from './user.service';
+import { UserController } from './user.controller';
+import { Authentication } from 'src/middlewares/authentication';
 
 @Global()
 @Module({
   imports: [SequelizeModule.forFeature([User])],
   providers: [UserService],
   exports: [UserService],
+  controllers: [UserController],
 })
-export class UserModule {}
+export class UserModule implements NestModule {
+  public configure(consumer: MiddlewareConsumer) {
+    consumer.apply(Authentication).forRoutes(UserController);
+  }
+}

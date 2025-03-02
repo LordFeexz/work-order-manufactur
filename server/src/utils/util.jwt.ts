@@ -5,6 +5,7 @@ import { USER_ROLE } from 'src/models/users';
 export interface TokenPayload {
   id: string;
   role: USER_ROLE;
+  username: string;
 }
 
 export type TokenValue<T = any> = TokenPayload & JwtPayload & T;
