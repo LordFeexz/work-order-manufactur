@@ -26,6 +26,7 @@ import { USER_ROLE } from 'src/models/users';
 import { plainToInstance } from 'class-transformer';
 import { GetWorkOrderData } from './dto/get.dto';
 import { validate } from 'uuid';
+import { GetDetailWorkOrder } from './dto/get.detail.dto';
 
 @Injectable()
 export class WorkOrderService {
@@ -157,5 +158,63 @@ export class WorkOrderService {
       total: Number(total),
       datas: plainToInstance(GetWorkOrderData, datas),
     };
+  }
+
+  public async findDetailByNo(no: string) {
+    const [result] = await this.sequelize.query<GetDetailWorkOrder>(
+      `SELECT
+        wo.no,
+        wo.name,
+        wo.amount,
+        wo.deadline,
+        wo.status,
+        op.username AS operator_name,
+        pm.username AS creator_name,
+        wo.operator_id,
+        wo.created_by,
+        wo.in_progress_at,
+        wo.in_finish_at,
+        (
+          COALESCE(
+            json_agg(
+              json_build_object(
+                'work_order_number', wt.work_order_number,
+                'updater_name', up.username,
+                'updater_role', up.role,
+                'created_at', wt.created_at,
+                'current_status', wt.current_status,
+                'updated_status', wt.updated_status
+              )
+            ),
+          '[]'
+          )
+        ) AS timelines
+      FROM work_orders wo
+      LEFT JOIN users op ON wo.operator_id = op.id
+      LEFT JOIN users pm ON wo.created_by = pm.id
+      LEFT JOIN work_trackers wt ON wo.no = wt.work_order_number
+      LEFT JOIN users up ON wt.updated_by = up.id
+      WHERE wo.no = $1
+      GROUP BY
+        wo.no,
+        wo.name,
+        wo.amount,
+        wo.deadline,
+        wo.status,
+        op.username,
+        pm.username,
+        wo.in_progress_at,
+        wo.in_finish_at
+      `,
+      {
+        type: QueryTypes.SELECT,
+        bind: [no],
+        benchmark: true,
+      },
+    );
+
+    if (!result) return null;
+
+    return plainToInstance(GetDetailWorkOrder, result);
   }
 }

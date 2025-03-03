@@ -24,6 +24,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiTags,
   ApiTooManyRequestsResponse,
@@ -59,6 +60,8 @@ import {
   getWorkOrderSchema,
   type IGetWorkOrderSchema,
 } from './workOrder.schema';
+import { WoFindDetailByNoPipe } from './pipes/findDetailByNo.pipe';
+import { GetDetailWorkOrder } from './dto/get.detail.dto';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -304,6 +307,12 @@ export class WorkOrderController extends BaseController {
       data: null,
     },
   })
+  @ApiParam({
+    name: 'no',
+    type: String,
+    required: true,
+    description: 'work order number',
+  })
   public async reAssigned(
     @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
     @Body(
@@ -428,6 +437,12 @@ export class WorkOrderController extends BaseController {
       status: 'Bad Request',
       data: null,
     },
+  })
+  @ApiParam({
+    name: 'no',
+    type: String,
+    required: true,
+    description: 'work order number',
   })
   public async updateStatus(
     @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
@@ -602,5 +617,97 @@ export class WorkOrderController extends BaseController {
         totalPage: Math.ceil(total / limit),
       },
     );
+  }
+
+  @Get(':no')
+  @HttpCode(200)
+  @ApiParam({
+    name: 'no',
+    type: String,
+    required: true,
+    description: 'work order number',
+  })
+  @ApiNotFoundResponse({
+    description: 'work order not found',
+    example: {
+      code: 404,
+      message: 'work order not found',
+      errors: null,
+      status: 'Not Found',
+      data: null,
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'unauthorized',
+    example: {
+      code: 401,
+      message: 'unauthorized to access work order data',
+      errors: null,
+      status: 'Unauthorized',
+      data: null,
+    },
+  })
+  @ApiOkResponse({
+    description: 'ok',
+    example: {
+      code: 200,
+      message: 'ok',
+      errors: null,
+      status: 'OK',
+      data: {
+        no: 'WO-20250303-001',
+        name: 'Emas',
+        amount: 10,
+        deadline: '2025-04-03T16:59:59.999Z',
+        status: 'Completed',
+        operator_name: 'udin',
+        creator_name: 'ujang',
+        operator_id: '27c95272-0eb0-4297-8cf9-ed94df8e4a6f',
+        created_by: '38645e51-b590-4e00-a18c-e32f193f7758',
+        in_progress_at: '2025-03-03T01:54:14.397Z',
+        in_finish_at: '2025-03-03T03:40:41.297Z',
+        timelines: [
+          {
+            work_order_number: 'WO-20250303-001',
+            updater_name: 'ujang',
+            updater_role: 'product manager',
+            created_at: '2025-03-03T01:23:57.852Z',
+            current_status: 'Pending',
+            updated_status: 'Pending',
+          },
+          {
+            work_order_number: 'WO-20250303-001',
+            updater_name: 'udin',
+            updater_role: 'operator',
+            created_at: '2025-03-03T01:54:14.397Z',
+            current_status: 'Pending',
+            updated_status: 'In Progress',
+          },
+          {
+            work_order_number: 'WO-20250303-001',
+            updater_name: 'udin',
+            updater_role: 'operator',
+            created_at: '2025-03-03T03:40:41.297Z',
+            current_status: 'In Progress',
+            updated_status: 'Completed',
+          },
+        ],
+      },
+    },
+  })
+  public findByNo(
+    @Param('no', WoFindDetailByNoPipe) data: GetDetailWorkOrder | null,
+    @Me('id') id: string,
+  ) {
+    if (!data) throw new NotFoundException('work order not found');
+
+    if (![data.created_by, data.operator_id].includes(id))
+      throw new UnauthorizedException('unauthorized to access work order data');
+
+    return this.sendResponseBody({
+      message: 'ok',
+      code: 200,
+      data,
+    });
   }
 }
