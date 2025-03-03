@@ -5,7 +5,7 @@ export const newWorkOrderSchema = z.object({
     required_error: "name is required",
     invalid_type_error: "name must be a string",
   }),
-  amount: z
+  amount: z.coerce
     .number({
       required_error: "amount is required",
       invalid_type_error: "amount must be a number",
@@ -14,16 +14,14 @@ export const newWorkOrderSchema = z.object({
       (val) => !isNaN(parseInt(val.toString())),
       "amount must be a number"
     ),
-  time: z
+  deadline: z.coerce
     .date({
-      required_error: "time is required",
-      invalid_type_error: "time must be a date",
+      required_error: "deadline is required",
+      invalid_type_error: "deadline must be a date",
     })
-    .min(new Date(), "time must be in the future")
-    .max(new Date(), "time must be in the past")
     .refine(
-      (val) => val instanceof Date && isNaN(val.getTime()),
-      "time must be a date"
+      (val) => val.getTime() > Date.now(),
+      "deadline must be in the future"
     ),
   operatorId: z
     .string({

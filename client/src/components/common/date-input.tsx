@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useRef, type ComponentProps } from "react";
+import { memo, useRef, useState, type ComponentProps } from "react";
 import { Label } from "../ui/label";
 import { cn } from "@/libs/utils";
 import { Input } from "../ui/input";
@@ -9,7 +9,8 @@ import { Button } from "../ui/button";
 import { format } from "date-fns";
 import { Calendar } from "../ui/calendar";
 
-export interface DateInputProps extends Omit<ComponentProps<"input">, "type"> {
+export interface DateInputProps
+  extends Omit<ComponentProps<"input">, "type" | "value"> {
   wrapperClassName?: string;
   id: string;
   label: string;
@@ -17,6 +18,7 @@ export interface DateInputProps extends Omit<ComponentProps<"input">, "type"> {
   labelClassName?: string;
   errors?: string[];
   buttonClassName?: string;
+  value: Date;
 }
 
 function DateInput({
@@ -27,13 +29,19 @@ function DateInput({
   labelClassName,
   errors = [],
   buttonClassName,
+  value,
   ...rest
 }: DateInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedDate, setSelectedDate] = useState<string>(
+    new Date(value).toISOString()
+  );
+  const [open, setOpen] = useState(false);
+
   const handleSelect = (date: Date | undefined) => {
-    if (date && inputRef.current) {
-      inputRef.current.value = format(date, "yyyy-MM-dd");
-      inputRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+    if (date) {
+      setSelectedDate(new Date(date).toISOString());
+      setOpen(false);
     }
   };
 
@@ -55,18 +63,23 @@ function DateInput({
         type="hidden"
         required={required}
         aria-required={required}
+        value={selectedDate}
         id={id}
-        className="hidden"
         {...rest}
       />
-      <Popover>
+      <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button className={buttonClassName} variant="outline">
-            Select Date
+            {selectedDate ? format(selectedDate, "yyyy-MM-dd") : "Select Date"}
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-0">
-          <Calendar mode="single" onSelect={handleSelect} initialFocus />
+          <Calendar
+            mode="single"
+            selected={new Date(selectedDate)}
+            onSelect={handleSelect}
+            initialFocus
+          />
         </PopoverContent>
       </Popover>
       {!!errors.length && (

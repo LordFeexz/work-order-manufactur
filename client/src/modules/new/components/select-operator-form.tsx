@@ -25,10 +25,11 @@ function SelectOperatorForm({
   );
 
   useEffect(() => {
+    if (operators.length) return;
     startTransition(async () => {
       setOperators(await getOperatorData());
     });
-  }, []);
+  }, [operators]);
 
   return (
     <SelectInput

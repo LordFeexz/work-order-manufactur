@@ -12,13 +12,13 @@ const initialState: INewWorkOrderState = {
   errors: {},
   name: "",
   amount: 0,
-  time: new Date(),
+  deadline: new Date(),
   operatorId: "",
 };
 
 function NewWorkOrderForm() {
   const [
-    { errors, error, name, amount, time, operatorId },
+    { errors, error, name, amount, deadline, operatorId },
     formAction,
     pending,
   ] = useActionState(createWorkOrderAction, initialState);
@@ -35,6 +35,7 @@ function NewWorkOrderForm() {
         required
         wrapperClassName="space-y-2"
         errors={errors?.name}
+        min={2}
       />
       <LabelledInput
         id="amount"
@@ -51,13 +52,13 @@ function NewWorkOrderForm() {
         errors={errors?.amount}
       />
       <DateInput
-        id="time"
-        name="time"
-        label="time"
-        defaultValue={time.toISOString().split("T")[0]}
+        id="deadline"
+        name="deadline"
+        label="deadline"
+        value={deadline}
         required
         wrapperClassName="space-y-2"
-        errors={errors?.time}
+        errors={errors?.deadline}
       />
       <SelectOperatorForm
         errors={errors?.operatorId}

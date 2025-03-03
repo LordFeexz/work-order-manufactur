@@ -14,7 +14,7 @@ function SubmitBtn({
   disabled,
   className,
   children,
-  loadingComponent = <Loader2 className="w-4 h-4" />,
+  loadingComponent = <Loader2 className="w-4 h-4 animate-spin" />,
   ...rest
 }: SubmitBtnProps) {
   const { pending } = useFormStatus();
@@ -33,7 +33,7 @@ function SubmitBtn({
         className,
         "flex justify-center items-center",
         "hover:scale-[98.5%] hover:opacity-90 transition-all duration-300 shadow-md hover:shadow-sm",
-        "bg-blue-600 hover:bg-blue-700 text-neutral-900 dark:text-neutral-300 font-sans font-semibold"
+        "text-neutral-300 dark:text-neutral-900 font-sans font-semibold bg-foreground"
       )}
     >
       {pending ? loadingComponent : children}
