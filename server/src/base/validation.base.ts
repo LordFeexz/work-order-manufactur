@@ -7,7 +7,11 @@ export abstract class BaseValidation {
     value: any,
   ): Promise<z.infer<typeof zodSchema>> {
     const { data, success, error } = await zodSchema.safeParseAsync(value);
-    if (!success) throw new BadRequestException(error.formErrors.fieldErrors);
+    if (!success)
+      throw new BadRequestException({
+        ...error.formErrors.fieldErrors,
+        VALIDATION: 'VALIDATION ERROR',
+      });
 
     return data as z.infer<typeof zodSchema>;
   }

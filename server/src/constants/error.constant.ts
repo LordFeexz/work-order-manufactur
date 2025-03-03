@@ -10,3 +10,5 @@ export const LENGTH_ERROR = (min: number, max: number) =>
   `[LENGTH:${min}-${max}]`;
 
 export const UUID_ERROR = '[UUID]';
+
+export const ONE_OF_ERROR = (values: any[]) => `[ONE_OF:${values.join(',')}]`;

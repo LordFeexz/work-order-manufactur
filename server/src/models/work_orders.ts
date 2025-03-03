@@ -6,7 +6,7 @@ export enum WORK_ORDER_STATUS {
   PENDING = 'Pending',
   IN_PROGRESS = 'In Progress',
   COMPLETED = 'Completed',
-  CANCELLED = 'Cancelled',
+  CANCELLED = 'Canceled',
 }
 
 export interface IWorkOrderAttributes extends Omit<BaseModel<any>, 'id'> {

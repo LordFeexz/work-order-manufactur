@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -8,6 +9,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Redirect,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -48,6 +50,7 @@ import {
   WORK_ORDER_STATUS,
 } from 'src/models/work_orders';
 import { UserFindByIdLockedPipe } from '../user/pipes/findById.locked.pipe';
+import { OneOfPipe } from 'src/pipes/oneof.pipe';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -221,110 +224,6 @@ export class WorkOrderController extends BaseController {
     }
   }
 
-  @Patch(':no/in-progress')
-  @HttpCode(200)
-  @UseGuards(
-    new RateLimitGuard({
-      windowMs: 1 * 60 * 1000,
-      max: 5,
-      message: 'Too many requests from this IP, please try again in 1 minute.',
-    }),
-  )
-  @ApiTooManyRequestsResponse({
-    description:
-      'Too many requests from this IP, please try again in 1 minute.',
-  })
-  @Roles(USER_ROLE.OPERATOR)
-  @ApiOperation({
-    summary: 'update wo to in progress',
-    tags: [USER_ROLE.OPERATOR],
-  })
-  @ApiNotFoundResponse({
-    description: 'not found',
-    example: {
-      code: 404,
-      message: 'work order not found',
-      errors: null,
-      status: 'Not Found',
-      data: null,
-    },
-  })
-  @ApiUnauthorizedResponse({
-    description: 'unauthorized',
-    example: {
-      code: 401,
-      message: 'you are not the operator of this work order',
-      errors: null,
-      status: 'Unauthorized',
-      data: null,
-    },
-  })
-  @ApiOkResponse({
-    description: 'ok',
-    example: {
-      code: 200,
-      message: 'updated',
-      errors: null,
-      status: 'OK',
-      data: null,
-    },
-  })
-  @ApiConflictResponse({
-    description: 'conflict',
-    example: {
-      code: 409,
-      message:
-        'cannot update work order status because the current status is In Progress',
-      errors: null,
-      status: 'Conflict',
-      data: null,
-    },
-  })
-  public async setToInprogress(
-    @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
-    @Me('id') id: string,
-  ) {
-    if (!workOrder) throw new NotFoundException('work order not found');
-    if (workOrder.operator_id !== id)
-      throw new UnauthorizedException(
-        'you are not the operator of this work order',
-      );
-
-    if (workOrder.status !== WORK_ORDER_STATUS.PENDING)
-      throw new ConflictException(
-        `cannot update work order status because the current status is ${workOrder.status}`,
-      );
-
-    const transaction = await this.sequelize.transaction();
-    try {
-      await Promise.all([
-        this.workTrackerService.create(
-          new CreateWorkTrackerDto({
-            work_order_number: workOrder.no,
-            updated_by: id,
-            current_status: workOrder.status,
-            updated_status: WORK_ORDER_STATUS.IN_PROGRESS,
-          }),
-          { transaction },
-        ),
-        this.workOrderService.updateStatus(
-          workOrder.no,
-          WORK_ORDER_STATUS.IN_PROGRESS,
-          { transaction },
-        ),
-      ]);
-
-      await transaction.commit();
-      return this.sendResponseBody({
-        message: 'updated',
-        code: 200,
-      });
-    } catch (err) {
-      await transaction.rollback();
-      throw err;
-    }
-  }
-
   @Patch(':no/re-assigned')
   @HttpCode(200)
   @UseGuards(
@@ -432,5 +331,174 @@ export class WorkOrderController extends BaseController {
       message: 'updated',
       code: 200,
     });
+  }
+
+  @Patch(':no/status')
+  @HttpCode(200)
+  @UseGuards(
+    new RateLimitGuard({
+      windowMs: 1 * 60 * 1000,
+      max: 5,
+      message: 'Too many requests from this IP, please try again in 1 minute.',
+    }),
+  )
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many requests from this IP, please try again in 1 minute.',
+  })
+  @Roles(USER_ROLE.PRODUCT_MANAGER, USER_ROLE.OPERATOR)
+  @ApiOperation({
+    summary: 'finish work order',
+    tags: [USER_ROLE.PRODUCT_MANAGER, USER_ROLE.OPERATOR],
+  })
+  @ApiNotFoundResponse({
+    description: 'not found',
+    example: {
+      code: 404,
+      message: 'work order not found',
+      errors: null,
+      status: 'Not Found',
+      data: null,
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'unauthorized',
+    example: {
+      code: 401,
+      message: 'unauthorized to update status',
+      errors: null,
+      status: 'Unauthorized',
+      data: null,
+    },
+  })
+  @ApiOkResponse({
+    description: 'ok',
+    example: {
+      code: 200,
+      message: 'updated',
+      errors: null,
+      status: 'OK',
+      data: null,
+    },
+  })
+  @ApiConflictResponse({
+    description: 'conflict',
+    example: {
+      code: 409,
+      message:
+        'cannot update work order status because the current status is In Progress',
+      errors: null,
+      status: 'Conflict',
+      data: null,
+    },
+  })
+  @ApiBody({
+    required: true,
+    type: 'object',
+    schema: {
+      properties: {
+        status: {
+          type: 'string',
+          enum: [
+            WORK_ORDER_STATUS.COMPLETED,
+            WORK_ORDER_STATUS.CANCELLED,
+            WORK_ORDER_STATUS.IN_PROGRESS,
+          ],
+        },
+      },
+      required: ['status'],
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'bad request',
+    example: {
+      code: 400,
+      message: 'Bad Request Exception',
+      errors: {
+        status: ['[REQUIRED]'],
+      },
+      status: 'Bad Request',
+      data: null,
+    },
+  })
+  public async updateStatus(
+    @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
+    @Me() { id, role }: IUserAttributes,
+    @Body(
+      'status',
+      RequiredFieldPipe,
+      new TypePipe('string'),
+      new OneOfPipe([
+        WORK_ORDER_STATUS.COMPLETED,
+        WORK_ORDER_STATUS.CANCELLED,
+        WORK_ORDER_STATUS.IN_PROGRESS,
+      ]),
+    )
+    status: WORK_ORDER_STATUS,
+  ) {
+    if (!workOrder) throw new NotFoundException('work order not found');
+
+    if (role === USER_ROLE.OPERATOR) {
+      if (status === WORK_ORDER_STATUS.CANCELLED)
+        throw new UnauthorizedException('operator cannot cancel work order');
+
+      if (workOrder.operator_id !== id)
+        throw new UnauthorizedException(
+          'you are not the operator of this work order',
+        );
+
+      if (
+        (workOrder.status === WORK_ORDER_STATUS.PENDING &&
+          status !== WORK_ORDER_STATUS.IN_PROGRESS) ||
+        (workOrder.status === WORK_ORDER_STATUS.IN_PROGRESS &&
+          status !== WORK_ORDER_STATUS.COMPLETED)
+      )
+        throw new ConflictException(
+          `cannot update work order status to ${status} because the current status is ${workOrder.status}`,
+        );
+    }
+
+    if (role === USER_ROLE.PRODUCT_MANAGER) {
+      if (workOrder.created_by !== id)
+        throw new UnauthorizedException('unauthorized to update status');
+
+      if (
+        status === WORK_ORDER_STATUS.CANCELLED &&
+        workOrder.status !== WORK_ORDER_STATUS.PENDING
+      )
+        throw new ConflictException('cannot cancel a running work order');
+
+      if (status === WORK_ORDER_STATUS.COMPLETED)
+        throw new BadRequestException(
+          `product manager cannot update work order status to ${WORK_ORDER_STATUS.COMPLETED}`,
+        );
+    }
+
+    const transaction = await this.sequelize.transaction();
+    try {
+      await Promise.all([
+        this.workTrackerService.create(
+          new CreateWorkTrackerDto({
+            work_order_number: workOrder.no,
+            updated_by: id,
+            current_status: workOrder.status,
+            updated_status: status,
+          }),
+          { transaction },
+        ),
+        this.workOrderService.updateStatus(workOrder.no, status, {
+          transaction,
+        }),
+      ]);
+
+      await transaction.commit();
+      return this.sendResponseBody({
+        message: 'updated',
+        code: 200,
+      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
   }
 }

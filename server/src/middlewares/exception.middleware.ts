@@ -60,7 +60,11 @@ export class AllExceptionFilter
       status === HttpStatus.BAD_REQUEST &&
       exception instanceof BadRequestException
     ) {
-      errors = exception.getResponse();
+      let errorData = exception.getResponse().valueOf();
+      if (errorData.hasOwnProperty('VALIDATION')) {
+        errorData['VALIDATION'] = undefined;
+        errors = errorData;
+      }
     }
 
     host
