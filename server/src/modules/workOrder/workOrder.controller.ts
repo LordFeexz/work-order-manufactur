@@ -47,6 +47,7 @@ import {
   IWorkOrderAttributes,
   WORK_ORDER_STATUS,
 } from 'src/models/work_orders';
+import { UserFindByIdLockedPipe } from '../user/pipes/findById.locked.pipe';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -322,5 +323,114 @@ export class WorkOrderController extends BaseController {
       await transaction.rollback();
       throw err;
     }
+  }
+
+  @Patch(':no/re-assigned')
+  @HttpCode(200)
+  @UseGuards(
+    new RateLimitGuard({
+      windowMs: 1 * 60 * 1000,
+      max: 5,
+      message: 'Too many requests from this IP, please try again in 1 minute.',
+    }),
+  )
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many requests from this IP, please try again in 1 minute.',
+  })
+  @Roles(USER_ROLE.PRODUCT_MANAGER)
+  @ApiOperation({
+    summary: 're assign work order',
+    tags: [USER_ROLE.PRODUCT_MANAGER],
+  })
+  @ApiBody({
+    required: true,
+    type: 'object',
+    schema: {
+      properties: {
+        operatorId: {
+          type: 'string',
+        },
+      },
+      required: ['operatorId'],
+    },
+  })
+  @ApiBadRequestResponse({
+    description: 'Bad Request',
+    example: {
+      code: 400,
+      message: 'Bad Request Exception',
+      errors: {
+        operatorId: ['[REQUIRED]'],
+      },
+      status: 'Bad Request',
+      data: null,
+    },
+  })
+  @ApiConflictResponse({
+    description: 'conflict',
+    example: {
+      code: 409,
+      message: 'order must assigned to an operator',
+      errors: null,
+      status: 'Conflict',
+      data: null,
+    },
+  })
+  @ApiNotFoundResponse({
+    description: 'not found',
+    example: {
+      code: 404,
+      message: 'work order not found',
+      errors: null,
+      status: 'Not Found',
+      data: null,
+    },
+  })
+  @ApiOkResponse({
+    description: 'ok',
+    example: {
+      code: 200,
+      message: 'updated',
+      errors: null,
+      status: 'OK',
+      data: null,
+    },
+  })
+  public async reAssigned(
+    @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
+    @Body(
+      'operatorId',
+      RequiredFieldPipe,
+      new TypePipe('string'),
+      new ParseUUIDPipe({ version: '4' }),
+      UserFindByIdLockedPipe,
+    )
+    operator: IUserAttributes | null,
+    @Me('id') id: string,
+  ) {
+    if (!workOrder) throw new NotFoundException('work order not found');
+    if (!operator) throw new NotFoundException('operator not found');
+
+    if (workOrder.created_by !== id)
+      throw new ConflictException(
+        'cannot update other product manager work order',
+      );
+
+    if (workOrder.status !== WORK_ORDER_STATUS.PENDING)
+      throw new ConflictException('work is already running');
+
+    if (operator.role !== USER_ROLE.OPERATOR)
+      throw new ConflictException('order must assigned to an operator');
+
+    if (workOrder.operator_id === operator.id)
+      throw new ConflictException('operator is already assigned');
+
+    await this.workOrderService.reAssignOperator(workOrder.no, operator.id);
+
+    return this.sendResponseBody({
+      message: 'updated',
+      code: 200,
+    });
   }
 }

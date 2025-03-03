@@ -72,4 +72,15 @@ export class WorkOrderService {
 
     return this.model.update(payload, { ...opts, where: { no } });
   }
+
+  public async reAssignOperator(
+    no: string,
+    operator_id: string,
+    opts?: Omit<UpdateOptions<IWorkOrderAttributes>, 'where'>,
+  ) {
+    return this.model.update(
+      { operator_id },
+      { ...opts, where: { no, status: WORK_ORDER_STATUS.PENDING } },
+    );
+  }
 }
