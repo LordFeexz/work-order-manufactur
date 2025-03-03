@@ -3,13 +3,14 @@ import {
   Body,
   ConflictException,
   Controller,
+  Get,
   HttpCode,
   NotFoundException,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
-  Redirect,
+  Query,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -23,6 +24,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
   ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
@@ -46,11 +48,17 @@ import {
 import { CreateWODto } from './dto/create.dto';
 import { WoFindByNoLockedPipe } from './pipes/findByNo.locked.pipe';
 import {
-  IWorkOrderAttributes,
+  type IWorkOrderAttributes,
   WORK_ORDER_STATUS,
+  WORK_ORDER_STATUSES,
 } from 'src/models/work_orders';
 import { UserFindByIdLockedPipe } from '../user/pipes/findById.locked.pipe';
 import { OneOfPipe } from 'src/pipes/oneof.pipe';
+import { type IBaseQuery, QueryPipe } from 'src/pipes/query.pipe';
+import {
+  getWorkOrderSchema,
+  type IGetWorkOrderSchema,
+} from './workOrder.schema';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -500,5 +508,99 @@ export class WorkOrderController extends BaseController {
       await transaction.rollback();
       throw err;
     }
+  }
+
+  @Get()
+  @HttpCode(200)
+  @Roles(USER_ROLE.OPERATOR, USER_ROLE.PRODUCT_MANAGER)
+  @ApiOperation({
+    summary: 'get all work order data',
+    tags: [USER_ROLE.OPERATOR, USER_ROLE.PRODUCT_MANAGER],
+  })
+  @ApiQuery({
+    name: 'page',
+    type: Number,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'limit',
+    type: Number,
+    required: false,
+  })
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: false,
+    description: 'query search params',
+  })
+  @ApiQuery({
+    name: 'status',
+    type: String,
+    required: false,
+    enum: WORK_ORDER_STATUSES,
+  })
+  @ApiQuery({
+    name: 'operator_id',
+    type: String,
+    required: false,
+    description: 'filter by operator id (product manager only)',
+  })
+  @ApiOkResponse({
+    description: 'ok',
+    example: {
+      code: 200,
+      message: 'ok',
+      errors: null,
+      status: 'OK',
+      data: [
+        {
+          no: 'WO-20250303-001',
+          name: 'Emas',
+          amount: 10,
+          deadline: '2025-04-03T16:59:59.999Z',
+          status: 'Completed',
+          operator_name: 'udin',
+        },
+      ],
+      page: 1,
+      limit: 10,
+      totalData: 4,
+      totalPage: 1,
+    },
+  })
+  public async findAll(
+    @Me() { id, role }: IUserAttributes,
+    @Query(new QueryPipe(1, 10, getWorkOrderSchema))
+    {
+      page = 1,
+      limit = 10,
+      q = null,
+      status = null,
+      operator_id = null,
+    }: IBaseQuery<IGetWorkOrderSchema>,
+  ) {
+    const { total = 0, datas = [] } = await this.workOrderService.findAll({
+      page,
+      limit,
+      q,
+      status,
+      operator_id,
+      role,
+      user_id: id,
+    });
+
+    return this.sendResponseBody(
+      {
+        message: 'ok',
+        code: 200,
+        data: datas,
+      },
+      {
+        page,
+        limit,
+        totalData: total,
+        totalPage: Math.ceil(total / limit),
+      },
+    );
   }
 }

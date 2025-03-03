@@ -9,6 +9,8 @@ export enum WORK_ORDER_STATUS {
   CANCELLED = 'Canceled',
 }
 
+export const WORK_ORDER_STATUSES = Object.values(WORK_ORDER_STATUS);
+
 export interface IWorkOrderAttributes extends Omit<BaseModel<any>, 'id'> {
   no: string;
   name: string;
