@@ -4,8 +4,11 @@ import {
   Controller,
   HttpCode,
   NotFoundException,
+  Param,
   ParseUUIDPipe,
+  Patch,
   Post,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,9 +19,11 @@ import {
   ApiConsumes,
   ApiCreatedResponse,
   ApiNotFoundResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiTooManyRequestsResponse,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { BaseController } from 'src/base/controller.base';
 import { Roles } from 'src/decorators/role.decorator';
@@ -32,8 +37,16 @@ import { WorkOrderService } from './workOrder.service';
 import { Sequelize } from 'sequelize-typescript';
 import { Me } from 'src/decorators/me.decorator';
 import { WorkTrackerService } from '../workTracker/workTracker.service';
-import { InitialCreateWorkTrackerDto } from '../workTracker/dto/create.dto';
+import {
+  CreateWorkTrackerDto,
+  InitialCreateWorkTrackerDto,
+} from '../workTracker/dto/create.dto';
 import { CreateWODto } from './dto/create.dto';
+import { WoFindByNoLockedPipe } from './pipes/findByNo.locked.pipe';
+import {
+  IWorkOrderAttributes,
+  WORK_ORDER_STATUS,
+} from 'src/models/work_orders';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -200,6 +213,110 @@ export class WorkOrderController extends BaseController {
           operator_id: wo.operator_id,
           created_by: wo.created_by,
         },
+      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  }
+
+  @Patch(':no/in-progress')
+  @HttpCode(200)
+  @UseGuards(
+    new RateLimitGuard({
+      windowMs: 1 * 60 * 1000,
+      max: 5,
+      message: 'Too many requests from this IP, please try again in 1 minute.',
+    }),
+  )
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many requests from this IP, please try again in 1 minute.',
+  })
+  @Roles(USER_ROLE.OPERATOR)
+  @ApiOperation({
+    summary: 'update wo to in progress',
+    tags: [USER_ROLE.OPERATOR],
+  })
+  @ApiNotFoundResponse({
+    description: 'not found',
+    example: {
+      code: 404,
+      message: 'work order not found',
+      errors: null,
+      status: 'Not Found',
+      data: null,
+    },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'unauthorized',
+    example: {
+      code: 401,
+      message: 'you are not the operator of this work order',
+      errors: null,
+      status: 'Unauthorized',
+      data: null,
+    },
+  })
+  @ApiOkResponse({
+    description: 'ok',
+    example: {
+      code: 200,
+      message: 'updated',
+      errors: null,
+      status: 'OK',
+      data: null,
+    },
+  })
+  @ApiConflictResponse({
+    description: 'conflict',
+    example: {
+      code: 409,
+      message:
+        'cannot update work order status because the current status is In Progress',
+      errors: null,
+      status: 'Conflict',
+      data: null,
+    },
+  })
+  public async setToInprogress(
+    @Param('no', WoFindByNoLockedPipe) workOrder: IWorkOrderAttributes | null,
+    @Me('id') id: string,
+  ) {
+    if (!workOrder) throw new NotFoundException('work order not found');
+    if (workOrder.operator_id !== id)
+      throw new UnauthorizedException(
+        'you are not the operator of this work order',
+      );
+
+    if (workOrder.status !== WORK_ORDER_STATUS.PENDING)
+      throw new ConflictException(
+        `cannot update work order status because the current status is ${workOrder.status}`,
+      );
+
+    const transaction = await this.sequelize.transaction();
+    try {
+      await Promise.all([
+        this.workTrackerService.create(
+          new CreateWorkTrackerDto({
+            work_order_number: workOrder.no,
+            updated_by: id,
+            current_status: workOrder.status,
+            updated_status: WORK_ORDER_STATUS.IN_PROGRESS,
+          }),
+          { transaction },
+        ),
+        this.workOrderService.updateStatus(
+          workOrder.no,
+          WORK_ORDER_STATUS.IN_PROGRESS,
+          { transaction },
+        ),
+      ]);
+
+      await transaction.commit();
+      return this.sendResponseBody({
+        message: 'updated',
+        code: 200,
       });
     } catch (err) {
       await transaction.rollback();
