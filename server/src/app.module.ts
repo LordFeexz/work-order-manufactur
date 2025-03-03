@@ -16,6 +16,10 @@ import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './guards/role.guard';
+import { WorkOrder } from './models/work_orders';
+import { WorkOrderModule } from './modules/workOrder/workOrder.module';
+import { WorkTracker } from './models/work_tracker';
+import { WorkTrackerModule } from './modules/workTracker/workTracker.module';
 
 const conf = require('../config/config');
 const environment = process.env.NODE_ENV ?? 'development';
@@ -52,10 +56,12 @@ const environment = process.env.NODE_ENV ?? 'development';
       },
       timezone: '+07:00',
       benchmark: true,
-      models: [User],
+      models: [User, WorkOrder, WorkTracker],
     }),
     UserModule,
     AuthModule,
+    WorkOrderModule,
+    WorkTrackerModule,
   ],
   providers: [
     {
