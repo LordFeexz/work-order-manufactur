@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,7 +11,7 @@ import { USER_ROLE } from "@/enums/model";
 import { WORK_ORDER_STATUS } from "@/interfaces/model";
 import { Eye, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import UpdateStatusBtn from "./update-status-btn";
 import { useSession } from "next-auth/react";
 import type { CustomSession } from "@/interfaces/global";
@@ -27,36 +25,30 @@ function WorkOrderAction({ no, status }: WorkOrderActionProps) {
   const { data: session, status: sessionStatus } = useSession();
   const { role } = (session as CustomSession)?.user ?? {};
 
-  const [statusToUpdate, text, className] = useMemo(() => {
-    if (sessionStatus !== "authenticated") return [null, "", ""];
+  let statusToUpdate: WORK_ORDER_STATUS | null = null;
+  let text = "";
+  let className = " text-white px-4 py-2 rounded";
 
-    let statusToUpdate: WORK_ORDER_STATUS | null = null;
-    let text = "";
-    let className = " text-white px-4 py-2 rounded";
-
-    if (role === USER_ROLE.OPERATOR) {
-      if (status === WORK_ORDER_STATUS.PENDING) {
-        statusToUpdate = WORK_ORDER_STATUS.IN_PROGRESS;
-        className += " bg-blue-500";
-        text = "Start Work";
-      }
-
-      if (status === WORK_ORDER_STATUS.IN_PROGRESS) {
-        statusToUpdate = WORK_ORDER_STATUS.COMPLETED;
-        className += " bg-green-500";
-        text = "Finish Work";
-      }
+  if (role === USER_ROLE.OPERATOR) {
+    if (status === WORK_ORDER_STATUS.PENDING) {
+      statusToUpdate = WORK_ORDER_STATUS.IN_PROGRESS;
+      className += " bg-blue-500";
+      text = "Start Work";
     }
 
-    if (role === USER_ROLE.PRODUCT_MANAGER)
-      if (status === WORK_ORDER_STATUS.PENDING) {
-        statusToUpdate = WORK_ORDER_STATUS.CANCELLED;
-        className += " bg-red-500";
-        text = "Cancel Work";
-      }
+    if (status === WORK_ORDER_STATUS.IN_PROGRESS) {
+      statusToUpdate = WORK_ORDER_STATUS.COMPLETED;
+      className += " bg-green-500";
+      text = "Finish Work";
+    }
+  }
 
-    return [statusToUpdate, text, className];
-  }, [role, status, session, sessionStatus]);
+  if (role === USER_ROLE.PRODUCT_MANAGER)
+    if (status === WORK_ORDER_STATUS.PENDING) {
+      statusToUpdate = WORK_ORDER_STATUS.CANCELLED;
+      className += " bg-red-500";
+      text = "Cancel Work";
+    }
 
   return (
     <DropdownMenu>

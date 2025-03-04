@@ -4,7 +4,7 @@ import { format } from "date-fns";
 import WorkOrderStatusBadge from "./components/work-order-status-badge";
 import WorkOrderAction from "./components/work-order-action";
 
-export const DASHBOARD_COLUMN: ColumnDef<IWorkOrderListData>[] = [
+export const DASHBOARD_COLUMN: ColumnDef<IWorkOrderListData, any>[] = [
   {
     accessorKey: "no",
     header: "Work Order",

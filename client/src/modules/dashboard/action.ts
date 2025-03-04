@@ -34,7 +34,9 @@ export async function getWorkOrderDatas({
         user_id: session?.user.id,
       },
       next: {
-        revalidate: 259200000, //3 hari
+        revalidate: q
+          ? 60000 //1 menit
+          : 259200000, //3 hari
         tags: [`${DASHBOARD_WORK_ORDERS_CACHE}-${session?.user.id}`],
       },
       cache: "force-cache",

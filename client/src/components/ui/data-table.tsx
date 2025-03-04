@@ -22,18 +22,79 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import {
+  memo,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEventHandler,
+} from "react";
+import useWriteParams from "@/hooks/use-write-params";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+
+  //pagination
   searchKey?: string;
+  canNext?: boolean;
+  nextHandler?: () => void;
+  canPrevious?: boolean;
+  previousHandler?: () => void;
+
+  //search
+  ssrSearchKey?: string;
 }
 
-export function DataTable<TData, TValue>({
+export interface SSRSearchProps {
+  searchKey: string;
+}
+
+const SSRSearch = memo(({ searchKey }: SSRSearchProps) => {
+  const ref = useRef<HTMLInputElement>(null);
+  const [pending, current, handler] = useWriteParams(searchKey, 750);
+  const [value, setValue] = useState<string>(current);
+
+  const onChangeHandler: ChangeEventHandler<HTMLInputElement> = useCallback(
+    (e) => {
+      e.preventDefault();
+      setValue(e.target.value);
+      handler(e);
+    },
+    [handler]
+  );
+
+  useEffect(() => {
+    if (ref.current && value) ref.current.focus();
+  }, [value]);
+
+  return (
+    <div className="flex gap-2 items-center py-4">
+      <Input
+        placeholder="Search..."
+        onChange={onChangeHandler}
+        className={"max-w-sm"}
+        value={value}
+        ref={ref}
+        disabled={pending}
+        aria-disabled={pending}
+      />
+    </div>
+  );
+});
+SSRSearch.displayName = "SSRSearch";
+
+function DataTable<TData, TValue>({
   columns,
   data,
   searchKey,
+  canNext,
+  nextHandler,
+  canPrevious,
+  previousHandler,
+  ssrSearchKey,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -68,6 +129,11 @@ export function DataTable<TData, TValue>({
             className="max-w-sm"
           />
         </div>
+      )}
+      {ssrSearchKey && (
+        <Suspense>
+          <SSRSearch searchKey={ssrSearchKey} />
+        </Suspense>
       )}
       <div className="rounded-md border">
         <Table>
@@ -123,16 +189,28 @@ export function DataTable<TData, TValue>({
         <Button
           variant="outline"
           size="sm"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
+          onClick={() =>
+            typeof previousHandler === "function"
+              ? previousHandler()
+              : table.previousPage()
+          }
+          disabled={
+            typeof canPrevious === "boolean"
+              ? !canPrevious
+              : !table.getCanPreviousPage()
+          }
         >
           Previous
         </Button>
         <Button
           variant="outline"
           size="sm"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
+          onClick={() =>
+            typeof nextHandler === "function" ? nextHandler() : table.nextPage()
+          }
+          disabled={
+            typeof canNext === "boolean" ? canNext : !table.getCanNextPage()
+          }
         >
           Next
         </Button>
@@ -140,3 +218,5 @@ export function DataTable<TData, TValue>({
     </div>
   );
 }
+
+export default memo(DataTable);

@@ -11,7 +11,7 @@ export default async function Page({ searchParams }: PageProps) {
   );
 
   if (!success)
-    redirect(`/${new URLSearchParams({ page: "1", limit: "10" }).toString()}`);
+    redirect(`/?${new URLSearchParams({ page: "1", limit: "10" }).toString()}`);
 
   const { data: workOrderDatas = [] } = await getWorkOrderDatas(data);
 
