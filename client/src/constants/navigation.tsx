@@ -17,7 +17,7 @@ export const ROUTES = [
     show: true,
   },
   {
-    href: "/new",
+    href: "/work-order/new",
     label: "Create Work Order",
     icon: <Plus className="mr-2 h-4 w-4" />,
     show: USER_ROLE.PRODUCT_MANAGER,
