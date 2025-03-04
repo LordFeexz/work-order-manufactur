@@ -1,6 +1,7 @@
 import { memo } from "react";
 import type { IWorkOrderListData } from "@/interfaces/model";
 import WorkOrderTable from "./components/work-order-table";
+import ExportDataBtn from "./components/export-data-btn";
 
 export interface DashboardPageProps {
   datas: IWorkOrderListData[];
@@ -14,10 +15,8 @@ function DashboardPage({ datas }: DashboardPageProps) {
       </div>
 
       <div className="flex flex-col gap-6">
-        <div className="min-h-10">TODO</div>
-
         <div className="flex justify-end mb-4">
-          <button>TODO</button>
+          <ExportDataBtn />
         </div>
 
         <WorkOrderTable datas={datas} />

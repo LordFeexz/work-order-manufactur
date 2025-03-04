@@ -11,8 +11,10 @@ export async function request(
     for (const query in opts.query)
       if (opts.query[query]) searchParams.set(query, opts.query[query]);
 
+  const { signal } = new AbortController();
+
   return fetch(
     `${process.env.BACKEND_DOMAIN}${url}?${searchParams.toString()}`,
-    opts
+    { ...opts, signal }
   );
 }
