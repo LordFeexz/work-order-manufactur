@@ -658,6 +658,7 @@ export class WorkOrderController extends BaseController {
     required: false,
     description: 'filter by operator id',
   })
+  @ApiOkResponse({ description: 'ok' })
   public async exportData(
     @Res() res: Response,
     @Query(new QueryPipe(1, 10, getWorkOrderSchema))

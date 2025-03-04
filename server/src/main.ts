@@ -2,7 +2,6 @@ import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { ForbiddenException } from '@nestjs/common';
 import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AllExceptionFilter } from './middlewares/exception.middleware';
@@ -19,18 +18,7 @@ async function bootstrap() {
   app.getHttpAdapter().getInstance().set('trust proxy', 1);
   app.enableShutdownHooks();
 
-  app.enableCors({
-    origin(origin, cb) {
-      const whiteList = (process.env.CORS_LIST ?? '').indexOf(origin) !== -1;
-
-      cb(
-        whiteList
-          ? null
-          : new ForbiddenException(`Not allowed by CORS for origin ${origin}`),
-        whiteList ? true : void 0,
-      );
-    },
-  });
+  app.enableCors();
 
   app.use(
     helmet({
