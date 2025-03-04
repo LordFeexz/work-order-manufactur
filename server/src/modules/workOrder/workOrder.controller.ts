@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
@@ -62,6 +63,8 @@ import {
 } from './workOrder.schema';
 import { WoFindDetailByNoPipe } from './pipes/findDetailByNo.pipe';
 import { GetDetailWorkOrder } from './dto/get.detail.dto';
+import type { Response } from 'express';
+import { globalUtils } from 'src/utils/util.global';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -616,6 +619,90 @@ export class WorkOrderController extends BaseController {
         totalData: total,
         totalPage: Math.ceil(total / limit),
       },
+    );
+  }
+
+  @Get('export')
+  @HttpCode(200)
+  @UseGuards(
+    new RateLimitGuard({
+      windowMs: 1 * 60 * 1000,
+      max: 3,
+      message: 'Too many requests from this IP, please try again in 1 minute.',
+    }),
+  )
+  @ApiTooManyRequestsResponse({
+    description:
+      'Too many requests from this IP, please try again in 1 minute.',
+  })
+  @ApiOperation({
+    summary: 'download excel of exported data',
+    tags: [USER_ROLE.PRODUCT_MANAGER],
+  })
+  @Roles(USER_ROLE.PRODUCT_MANAGER)
+  @ApiQuery({
+    name: 'q',
+    type: String,
+    required: false,
+    description: 'query search params',
+  })
+  @ApiQuery({
+    name: 'status',
+    type: String,
+    required: false,
+    enum: WORK_ORDER_STATUSES,
+  })
+  @ApiQuery({
+    name: 'operator_id',
+    type: String,
+    required: false,
+    description: 'filter by operator id',
+  })
+  public async exportData(
+    @Res() res: Response,
+    @Query(new QueryPipe(1, 10, getWorkOrderSchema))
+    {
+      q = null,
+      status = null,
+      operator_id = null,
+    }: Omit<IBaseQuery<IGetWorkOrderSchema>, 'page' | 'limit'>,
+  ) {
+    const datas = await this.workOrderService.findExportedWorkOrder({
+      q,
+      status,
+      operator_id,
+    });
+
+    return this.sendFile(
+      res,
+      [
+        [
+          'Content-Type',
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ],
+        ['Content-Disposition', 'attachment; filename=export_work_orders.xlsx'],
+      ],
+      await globalUtils.writeToMemory(
+        [
+          {
+            header: 'Work Order Number',
+            key: 'no',
+          },
+          { header: 'Task Name', key: 'name' },
+          { header: 'Amount', key: 'amount' },
+          { header: 'Deadline', key: 'deadline' },
+          { header: 'Status', key: 'status' },
+          { header: 'Operator', key: 'operator_name' },
+          { header: 'Product Manager', key: 'creator_name' },
+          { header: 'Start Progress At', key: 'in_progress_at' },
+          { header: 'Finish Progress At', key: 'in_finish_at' },
+        ],
+        datas.map((data) => ({
+          ...data,
+          in_finish_at: data.in_finish_at ?? 'N/A',
+          in_progress_at: data.in_progress_at ?? 'N/A',
+        })),
+      ),
     );
   }
 

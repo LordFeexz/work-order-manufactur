@@ -1,9 +1,11 @@
+import type { Response } from 'express';
 import { ERROR_NAME } from 'src/constants/global.constant';
 import type {
   IRespBody,
   IRespBodyProps,
   PaginationRespProps,
 } from 'src/interfaces/response.interface';
+import { PassThrough } from 'stream';
 
 export abstract class BaseController {
   protected sendResponseBody = (
@@ -17,4 +19,19 @@ export abstract class BaseController {
     data,
     ...opts,
   });
+
+  protected sendFile(
+    res: Response,
+    responseHeaders: [string, string][],
+    data: any,
+    encoding?: BufferEncoding,
+  ) {
+    const stream = new PassThrough();
+    stream.end(data, encoding);
+
+    if (responseHeaders.length)
+      for (const [key, value] of responseHeaders) res.setHeader(key, value);
+
+    stream.pipe(res);
+  }
 }

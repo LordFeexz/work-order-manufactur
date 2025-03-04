@@ -27,6 +27,7 @@ import { plainToInstance } from 'class-transformer';
 import { GetWorkOrderData } from './dto/get.dto';
 import { validate } from 'uuid';
 import { GetDetailWorkOrder } from './dto/get.detail.dto';
+import { GetExportWorkOrder } from './dto/get.export.dto';
 
 @Injectable()
 export class WorkOrderService {
@@ -216,5 +217,61 @@ export class WorkOrderService {
     if (!result) return null;
 
     return plainToInstance(GetDetailWorkOrder, result);
+  }
+
+  public async findExportedWorkOrder({
+    q = null,
+    status = null,
+    operator_id = null,
+  }: Omit<IBaseQuery<IGetWorkOrderSchema>, 'page' | 'limit'>) {
+    const bind = [];
+    if (q) bind.push(q);
+    const results = await this.sequelize.query<GetExportWorkOrder>(
+      `
+      SELECT 
+        wo.no,
+        wo.name,
+        wo.amount,
+        wo.deadline,
+        wo.status,
+        op.username AS operator_name,
+        pm.username AS creator_name,
+        wo.operator_id,
+        wo.created_by,
+        wo.in_progress_at,
+        wo.in_finish_at
+      FROM work_orders wo
+      LEFT JOIN users op ON wo.operator_id = op.id
+      LEFT JOIN users pm ON wo.created_by = pm.id
+      WHERE 
+        1 = 1
+        ${q ? ` AND (wo.name ILIKE '%' || $1 || '%' OR i.username ILIKE '%' || $1 || '%' OR wo.no ILIKE '%' || $1 || '%')` : ''}
+        ${status && WORK_ORDER_STATUSES.includes(status) ? ` AND wo.status = '${status}'` : ''}
+        ${operator_id && validate(operator_id) ? ` AND wo.operator_id = '${operator_id}' AND i.role = 'operator' ` : ''}
+      GROUP BY
+        wo.no,
+        wo.name,
+        wo.amount,
+        wo.deadline,
+        wo.status,
+        op.username,
+        pm.username,
+        wo.in_progress_at,
+        wo.in_finish_at
+      ORDER BY
+        wo.in_progress_at DESC,
+        wo.in_finish_at DESC,
+        wo.deadline DESC,
+        wo.amount DESC
+
+      `,
+      {
+        type: QueryTypes.SELECT,
+        bind,
+        benchmark: true,
+      },
+    );
+
+    return plainToInstance(GetExportWorkOrder, results);
   }
 }
