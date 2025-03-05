@@ -58,7 +58,6 @@ function ExportDataBtn() {
         link.parentNode?.removeChild(link);
         toast.info("file downloaded");
       } catch (err) {
-        console.log(err);
         toast.error("failed to download export data");
         return;
       }

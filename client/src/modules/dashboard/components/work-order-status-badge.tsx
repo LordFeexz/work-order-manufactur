@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { WORK_ORDER_STATUS } from "@/interfaces/model";
+import { cn } from "@/libs/utils";
 import { memo } from "react";
 
 export interface WorkOrderStatusBadgesProps {
@@ -14,7 +15,7 @@ function WorkOrderStatusBadges({ status }: WorkOrderStatusBadgesProps) {
       case WORK_ORDER_STATUS.IN_PROGRESS:
         return "default";
       case WORK_ORDER_STATUS.COMPLETED:
-        return "success";
+        return "outline";
       case WORK_ORDER_STATUS.CANCELLED:
         return "destructive";
       default:
@@ -23,7 +24,13 @@ function WorkOrderStatusBadges({ status }: WorkOrderStatusBadgesProps) {
   };
 
   return (
-    <Badge className="text-xs capitalize" variant={getVariant() as any}>
+    <Badge
+      className={cn(
+        "text-xs capitalize",
+        status === WORK_ORDER_STATUS.COMPLETED && "text-green-500"
+      )}
+      variant={getVariant()}
+    >
       {status}
     </Badge>
   );

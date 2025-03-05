@@ -3,7 +3,7 @@ import { z } from "zod";
 
 export const getWorkOrderDatasSchemaQuery = z.object({
   page: z.coerce.number().min(1).max(100),
-  limit: z.coerce.number().min(10).max(100),
+  limit: z.coerce.number().min(5).max(100),
   q: z.string().nullable().optional(),
   status: z
     .enum(["", ...Object.values(WORK_ORDER_STATUS)])

@@ -7,7 +7,10 @@ import { redirect } from "next/navigation";
 import type { IRespBody } from "@/interfaces/response";
 import type { IUserData } from "@/interfaces/model";
 import { revalidateTag } from "next/cache";
-import { DASHBOARD_WORK_ORDERS_CACHE } from "@/constants/cache";
+import {
+  DASHBOARD_WORK_ORDERS_CACHE,
+  WORK_ORDER_DETAIL_CACHE,
+} from "@/constants/cache";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export async function createWorkOrderAction(
@@ -15,7 +18,8 @@ export async function createWorkOrderAction(
   formData: FormData
 ) {
   const session = await getServerSideSession();
-  if (!session || !session.user?.access_token) redirect("/login");
+  if (!session || !session.user?.access_token)
+    redirect("/login?deleteSession=true");
 
   const { data, success, error } = await newWorkOrderSchema.safeParseAsync({
     name: formData.get("name"),
@@ -32,17 +36,20 @@ export async function createWorkOrderAction(
       body: JSON.stringify(data),
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.user.access_token}`,
+        Authorization: `Bearer ${session?.user.access_token}`,
       },
     });
 
-    if (!response.ok)
+    if (!response.ok) {
+      const { message } = (await response.json()) as IRespBody;
       return {
         ...prevState,
-        error: "something went wrong",
+        error: message ?? "something went wrong",
       };
+    }
 
-    revalidateTag(DASHBOARD_WORK_ORDERS_CACHE);
+    revalidateTag(`${DASHBOARD_WORK_ORDERS_CACHE}-${session?.user.id}`);
+    revalidateTag(`${WORK_ORDER_DETAIL_CACHE}-${session?.user.id}`);
     redirect("/");
   } catch (err) {
     if (isRedirectError(err)) throw err;
@@ -53,7 +60,8 @@ export async function createWorkOrderAction(
 
 export async function getOperatorData() {
   const session = await getServerSideSession();
-  if (!session || !session?.user?.access_token) redirect("/login");
+  if (!session || !session?.user?.access_token)
+    redirect("/login?deleteSession=true");
 
   try {
     const response = await request("/users", {

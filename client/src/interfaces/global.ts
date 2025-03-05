@@ -12,9 +12,9 @@ export type PageProps<
 };
 
 export interface CustomSession extends Session {
-  user?: {
-    id?: string;
-    name?: string;
+  user: {
+    id: string;
+    name: string;
     role: USER_ROLE;
     access_token: string;
   };

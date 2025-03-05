@@ -14,13 +14,13 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 export async function getWorkOrderDatas({
   page = 1,
-  limit = 10,
+  limit = 5,
   q = null,
   status = null,
   operator_id = null,
 }: IGetWorkOrderDatasSchemaQuery) {
   const session = await getServerSideSession();
-  if (!session || !session?.user) redirect("/login");
+  if (!session || !session?.user) redirect("/login?deleteSession=true");
 
   try {
     const response = await request(`/work-orders`, {
@@ -74,7 +74,7 @@ export async function getWorkOrderDatas({
 
 export async function updateWoStatus(no: string, status: WORK_ORDER_STATUS) {
   const session = await getServerSideSession();
-  if (!session || !session?.user) redirect("/login");
+  if (!session || !session?.user) redirect("/login?deleteSession=true");
 
   try {
     const response = await request(`/work-orders/${no}/status`, {
@@ -95,6 +95,7 @@ export async function updateWoStatus(no: string, status: WORK_ORDER_STATUS) {
     const { code, message } = (await response.json()) as IRespBody;
 
     revalidateTag(`${DASHBOARD_WORK_ORDERS_CACHE}-${session?.user.id}`);
+    revalidateTag(`${WORK_ORDER_DETAIL_CACHE}-${session?.user.id}`);
     revalidateTag(`${WORK_ORDER_DETAIL_CACHE}-${no}`);
     revalidatePath("/");
 

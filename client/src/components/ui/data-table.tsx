@@ -68,6 +68,8 @@ const SSRSearch = memo(({ searchKey }: SSRSearchProps) => {
 
   useEffect(() => {
     if (ref.current && value) ref.current.focus();
+
+    return () => setValue("");
   }, [value]);
 
   return (
@@ -209,7 +211,7 @@ function DataTable<TData, TValue>({
             typeof nextHandler === "function" ? nextHandler() : table.nextPage()
           }
           disabled={
-            typeof canNext === "boolean" ? canNext : !table.getCanNextPage()
+            typeof canNext === "boolean" ? !canNext : !table.getCanNextPage()
           }
         >
           Next

@@ -25,14 +25,11 @@ export async function loginAction(prevState: ILoginState, formData: FormData) {
       },
     });
 
-    if (!response.ok)
-      return {
-        ...prevState,
-        error: "something went wrong",
-      };
-
-    const { data: token, message } =
-      (await response.json()) as IRespBody<string>;
+    const {
+      data: token,
+      message,
+      ...t
+    } = (await response.json()) as IRespBody<string>;
 
     return response.status === 200
       ? { ...prevState, token }

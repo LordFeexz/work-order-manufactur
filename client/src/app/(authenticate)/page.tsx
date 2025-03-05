@@ -11,11 +11,15 @@ export default async function Page({ searchParams }: PageProps) {
   );
 
   if (!success)
-    redirect(`/?${new URLSearchParams({ page: "1", limit: "10" }).toString()}`);
+    redirect(`/?${new URLSearchParams({ page: "1", limit: "5" }).toString()}`);
 
-  const { data: workOrderDatas = [] } = await getWorkOrderDatas(data);
+  const {
+    data: workOrderDatas = [],
+    totalPage = 1,
+    page = 1,
+  } = await getWorkOrderDatas(data);
 
-  return <Dashboard datas={workOrderDatas} />;
+  return <Dashboard datas={workOrderDatas} page={page} totalPage={totalPage} />;
 }
 
 export const metadata: Metadata = {
