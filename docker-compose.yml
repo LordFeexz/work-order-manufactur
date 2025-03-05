@@ -1,0 +1,45 @@
+version: "3"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: qwertyui
+      POSTGRES_DB: workorder_db
+    ports:
+      - "6543:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: ./server/Dockerfile
+      args:
+        - DB_CREATE=${DB_CREATE}
+        - DB_MIGRATE=${DB_MIGRATE}
+    container_name: backend_service
+    restart: always
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://root:qwertyui@postgres:5432/workorder_db
+    ports:
+      - "3001:3001"
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: ./client/Dockerfile
+    container_name: frontend_service
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:
