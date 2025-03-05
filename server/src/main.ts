@@ -34,19 +34,19 @@ async function bootstrap() {
     }),
   );
 
-  if (process.env.NODE_ENV === 'development')
-    SwaggerModule.setup(
-      'docs',
+  // if (process.env.NODE_ENV === 'development') //uncomment this part to only activate swagger on dev environment
+  SwaggerModule.setup(
+    'docs',
+    app,
+    SwaggerModule.createDocument(
       app,
-      SwaggerModule.createDocument(
-        app,
-        new DocumentBuilder().setTitle('Work Order Manufactur API').build(),
-        {
-          operationIdFactory: (controllerKey: string, methodKey: string) =>
-            methodKey,
-        },
-      ),
-    );
+      new DocumentBuilder().setTitle('Work Order Manufactur API').build(),
+      {
+        operationIdFactory: (controllerKey: string, methodKey: string) =>
+          methodKey,
+      },
+    ),
+  );
   await app.listen(process.env.PORT ?? 3001);
 }
 bootstrap();

@@ -715,6 +715,8 @@ export class WorkOrderController extends BaseController {
 
   @Get(':no')
   @HttpCode(200)
+  @ApiOperation({ summary: 'get work order by no' })
+  @Roles(USER_ROLE.PRODUCT_MANAGER, USER_ROLE.OPERATOR)
   @ApiParam({
     name: 'no',
     type: String,
