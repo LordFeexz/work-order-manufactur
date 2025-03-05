@@ -4,7 +4,7 @@ import {
   type NestModule,
 } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Authentication } from 'src/middlewares/authentication';
+import { Authentication } from 'src/middlewares/authentication.middleware';
 import { WorkOrder } from 'src/models/work_orders';
 import { WorkOrderController } from './workOrder.controller';
 import { WorkOrderService } from './workOrder.service';

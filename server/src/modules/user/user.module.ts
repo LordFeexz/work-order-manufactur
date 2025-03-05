@@ -8,7 +8,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { User } from 'src/models/users';
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { Authentication } from 'src/middlewares/authentication';
+import { Authentication } from 'src/middlewares/authentication.middleware';
 
 @Global()
 @Module({
