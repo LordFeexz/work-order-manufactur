@@ -9,8 +9,16 @@ import {
 import { WORK_ORDER_STATUS, type IWorkOrderDetail } from "@/interfaces/model";
 import { memo } from "react";
 import WorkOrderStatusBadge from "../dashboard/components/work-order-status-badge";
-import { Calendar, CheckCircle, Clock, Package, User } from "lucide-react";
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  Package,
+  User,
+  Hourglass,
+} from "lucide-react";
 import { format } from "date-fns";
+import DurationTime from "./components/duration-time";
 
 export interface DetailWorkOrderProps {
   data: IWorkOrderDetail;
@@ -58,31 +66,60 @@ function DetailWorkOrder({ data }: DetailWorkOrderProps) {
               </div>
 
               {data.in_progress_at && (
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <hgroup className="antialiased">
-                    <p className="text-sm text-muted-foreground">
-                      Start Progress At
-                    </p>
-                    <p className="font-medium">
-                      {format(new Date(data.in_progress_at), "PPp")}
-                    </p>
-                  </hgroup>
-                </div>
+                <>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
+                    <hgroup className="antialiased">
+                      <p className="text-sm text-muted-foreground">
+                        Start Progress At
+                      </p>
+                      <p className="font-medium">
+                        {format(new Date(data.in_progress_at), "PPp")}
+                      </p>
+                    </hgroup>
+                  </div>
+                  <div className="flex items-center">
+                    <Hourglass className="h-5 w-5 mr-2 text-muted-foreground" />
+                    <hgroup className="antialiased">
+                      <p className="text-sm text-muted-foreground">
+                        Time taken to move from Created to In Progress
+                      </p>
+                      <DurationTime
+                        laterDate={data.in_progress_at}
+                        earlierDate={data.created_at}
+                      />
+                    </hgroup>
+                  </div>
+                </>
               )}
 
               {data.in_finish_at && (
-                <div className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
-                  <hgroup className="antialiased">
-                    <p className="text-sm text-muted-foreground">
-                      Finish Progress At
-                    </p>
-                    <p className="font-medium">
-                      {format(new Date(data.in_finish_at), "PPp")}
-                    </p>
-                  </hgroup>
-                </div>
+                <>
+                  <div className="flex items-center">
+                    <Clock className="h-5 w-5 mr-2 text-muted-foreground" />
+                    <hgroup className="antialiased">
+                      <p className="text-sm text-muted-foreground">
+                        Finish Progress At
+                      </p>
+                      <p className="font-medium">
+                        {format(new Date(data.in_finish_at), "PPp")}
+                      </p>
+                    </hgroup>
+                  </div>
+
+                  <div className="flex items-center">
+                    <Hourglass className="h-5 w-5 mr-2 text-muted-foreground" />
+                    <hgroup className="antialiased">
+                      <p className="text-sm text-muted-foreground">
+                        Progress Duration
+                      </p>
+                      <DurationTime
+                        laterDate={data.in_finish_at}
+                        earlierDate={data.in_progress_at ?? data.created_at}
+                      />
+                    </hgroup>
+                  </div>
+                </>
               )}
 
               <div className="flex items-center">
@@ -161,7 +198,7 @@ function DetailWorkOrder({ data }: DetailWorkOrderProps) {
               </div>
               <hgroup className="antialiased">
                 <p className="font-medium capitalize">{data.operator_name}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   Operator ID: {data.operator_id}
                 </p>
               </hgroup>

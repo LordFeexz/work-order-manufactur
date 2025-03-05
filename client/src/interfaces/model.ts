@@ -31,6 +31,7 @@ export interface IWorkOrderDetail {
   created_by: string;
   in_progress_at: Date | string | null;
   in_finish_at: Date | string | null;
+  created_at: Date | string;
   timelines: Timeline[];
 }
 
