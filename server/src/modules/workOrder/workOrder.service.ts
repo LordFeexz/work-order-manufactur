@@ -174,6 +174,7 @@ export class WorkOrderService {
         wo.operator_id,
         wo.created_by,
         wo.in_progress_at,
+        wo.created_at,
         wo.in_finish_at,
         (
           COALESCE(
@@ -205,7 +206,8 @@ export class WorkOrderService {
         op.username,
         pm.username,
         wo.in_progress_at,
-        wo.in_finish_at
+        wo.in_finish_at,
+        wo.created_at
       `,
       {
         type: QueryTypes.SELECT,

@@ -759,6 +759,7 @@ export class WorkOrderController extends BaseController {
         operator_id: '27c95272-0eb0-4297-8cf9-ed94df8e4a6f',
         created_by: '38645e51-b590-4e00-a18c-e32f193f7758',
         in_progress_at: '2025-03-03T01:54:14.397Z',
+        created_at: '2025-03-03T00:54:14.397Z',
         in_finish_at: '2025-03-03T03:40:41.297Z',
         timelines: [
           {

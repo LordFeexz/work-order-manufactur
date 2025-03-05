@@ -49,6 +49,10 @@ export class GetDetailWorkOrder {
   public in_progress_at: string | null;
 
   @IsString()
+  @Transform(({ value }) => new Date(value).toISOString())
+  public created_at: string | null;
+
+  @IsString()
   @Transform(({ value }) => (value ? new Date(value).toISOString() : null))
   @IsOptional()
   public in_finish_at: string | null;
