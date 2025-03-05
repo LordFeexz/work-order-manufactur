@@ -65,6 +65,7 @@ import { WoFindDetailByNoPipe } from './pipes/findDetailByNo.pipe';
 import { GetDetailWorkOrder } from './dto/get.detail.dto';
 import type { Response } from 'express';
 import { globalUtils } from 'src/utils/util.global';
+import { format } from 'date-fns';
 
 @Controller('work-orders')
 @ApiTags('Work Orders')
@@ -700,8 +701,13 @@ export class WorkOrderController extends BaseController {
         ],
         datas.map((data) => ({
           ...data,
-          in_finish_at: data.in_finish_at ?? 'N/A',
-          in_progress_at: data.in_progress_at ?? 'N/A',
+          deadline: format(data.deadline, 'yyyy-MM-dd'),
+          in_finish_at: data.in_finish_at
+            ? format(data.in_finish_at, 'yyyy-MM-dd')
+            : 'N/A',
+          in_progress_at: data.in_progress_at
+            ? format(data.in_progress_at, 'yyyy-MM-dd')
+            : 'N/A',
         })),
       ),
     );

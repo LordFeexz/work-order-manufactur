@@ -131,24 +131,22 @@ export class WorkOrderService {
               ${q ? ` AND (wo.name ILIKE '%' || $3 || '%' OR i.username ILIKE '%' || $3 || '%' OR wo.no ILIKE '%' || $3 || '%')` : ''}
               ${status && WORK_ORDER_STATUSES.includes(status) ? ` AND wo.status = '${status}'` : ''}
               ${operator_id && role === USER_ROLE.PRODUCT_MANAGER && validate(operator_id) ? ` AND wo.operator_id = '${operator_id}' AND i.role = 'operator' ` : ''}
+            GROUP BY wo.no, i.username
             ORDER BY 
-              wo.status = 'Pending' DESC,
-              wo.status = 'In Progress' DESC,
+              CASE 
+                WHEN wo.status = 'Pending' THEN 1
+                WHEN wo.status = 'In Progress' THEN 2
+                ELSE 3 
+              END,
               wo.created_at DESC,
               wo.deadline ASC,
               wo.amount DESC
-          ),
-          total_datas AS (
-            SELECT COUNT(wod.no) AS total
-            FROM work_order_datas wod
-          ),
-          paginated_datas AS (
-            SELECT * FROM work_order_datas
-            LIMIT $2 OFFSET $1
           )
         SELECT
-          (SELECT COALESCE(total, 0) FROM total_datas) AS total,
-          (SELECT COALESCE(json_agg(pd.*), '[]') FROM paginated_datas pd) AS datas
+          (SELECT COALESCE((SELECT COUNT(no) FROM work_order_datas), 0)) AS total,
+          (SELECT COALESCE(json_agg(wod.*), '[]')) AS datas
+        FROM work_order_datas wod
+        LIMIT $2 OFFSET $1
         `,
         {
           type: QueryTypes.SELECT,
@@ -246,7 +244,7 @@ export class WorkOrderService {
       LEFT JOIN users op ON wo.operator_id = op.id
       LEFT JOIN users pm ON wo.created_by = pm.id
       WHERE 
-        1 = 1
+        wo.deleted_at IS NULL
         ${q ? ` AND (wo.name ILIKE '%' || $1 || '%' OR i.username ILIKE '%' || $1 || '%' OR wo.no ILIKE '%' || $1 || '%')` : ''}
         ${status && WORK_ORDER_STATUSES.includes(status) ? ` AND wo.status = '${status}'` : ''}
         ${operator_id && validate(operator_id) ? ` AND wo.operator_id = '${operator_id}' AND i.role = 'operator' ` : ''}
@@ -265,7 +263,6 @@ export class WorkOrderService {
         wo.in_finish_at DESC,
         wo.deadline DESC,
         wo.amount DESC
-
       `,
       {
         type: QueryTypes.SELECT,

@@ -53,17 +53,12 @@ export class UserService {
             ${role !== '*' && USER_ROLES.includes(role) ? ` AND role = '${role}'` : ''}
             ${q ? ` AND username ILIKE '%' || $3 || '%'` : ''}
             ORDER BY created_at ASC
-          ),
-          total_datas AS (
-            SELECT COUNT(ud.id) AS total FROM user_datas ud
-          ),
-          paginated_datas AS (
-            SELECT * FROM user_datas
-            LIMIT $2 OFFSET $1
           )
         SELECT
-          (SELECT COALESCE(td.total, 0) FROM total_datas td) AS total,
-          (SELECT COALESCE(json_agg(pd.*), '[]') FROM paginated_datas pd) AS datas
+          (SELECT COALESCE((SELECT COUNT(id) FROM user_datas), 0)) AS total,
+          (SELECT COALESCE(json_agg(ud.*), '[]')) AS datas
+        FROM user_datas ud 
+        LIMIT $2 OFFSET $1
         `,
         {
           type: QueryTypes.SELECT,
