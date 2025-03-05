@@ -588,10 +588,10 @@ export class WorkOrderController extends BaseController {
   })
   public async findAll(
     @Me() { id, role }: IUserAttributes,
-    @Query(new QueryPipe(1, 10, getWorkOrderSchema))
+    @Query(new QueryPipe(1, 5, getWorkOrderSchema))
     {
       page = 1,
-      limit = 10,
+      limit = 5,
       q = null,
       status = null,
       operator_id = null,

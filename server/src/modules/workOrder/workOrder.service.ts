@@ -132,8 +132,10 @@ export class WorkOrderService {
               ${status && WORK_ORDER_STATUSES.includes(status) ? ` AND wo.status = '${status}'` : ''}
               ${operator_id && role === USER_ROLE.PRODUCT_MANAGER && validate(operator_id) ? ` AND wo.operator_id = '${operator_id}' AND i.role = 'operator' ` : ''}
             ORDER BY 
-              wo.created_at ASC,
-              wo.deadline DESC,
+              wo.status = 'Pending' DESC,
+              wo.status = 'In Progress' DESC,
+              wo.created_at DESC,
+              wo.deadline ASC,
               wo.amount DESC
           ),
           total_datas AS (
